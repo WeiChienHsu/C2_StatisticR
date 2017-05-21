@@ -1,0 +1,256 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+* * *
+
+## Part 1: Data
+
+#Generalizability
+
+  Searching from website, we could know that the data come from the General Social Surveys, interviews administered to NORC national samples using a standard questionnaire which means it used a normal distribution method to collect the data.
+
+  I've searched for the types of this sureys and found out there're three ways to use. Firstly, Permanent questions that occur on each survey, which means they will collect the fair data even through the time goes by, if they kept changing the question likes asking if people thinks 3000 usd annual paid are good enough in 30 years ago and asking people now if 6000 usd annual paid are good enough now. They will get almost the same consequence but it's depedns on the different cost value changes by days. 
+
+Secondly, rotating questions that appear on two out of every three surveys (1973, 1974, and 1976, or 1973, 1975, and 1976), which means if they chose a same person to be the sample, he or she wouldn't choose anwers without thinking since he or she had already done the same questions. Different from permanent questions, those kinds of questions need to be dependent from condition, which like asking about health statues. Since, health statues don't change good or bad which just depends on the time, they still change by the interviewer's personal situatino. Thus, the questionnaire could reveal real situation and relationship between those problems.
+
+Last but not least, a few occasional questions such as split ballot experiments that occur in a single survey. Split ballot technique is a procedure where a sample is divided into two halves and each receives a slightly different questionnaire. The split-ballot technique consists of giving different forms of the questionnaire to equivalent portions of the sample. It reduces the effect of position bias when using multiple-choice questions in a questionnaire. 
+
+#Causality
+How to how the causality? I think we should analzye if the questions are designed to avoid leading interviewers to a specficist way and whether the each variabilities are independent to each other. The Interviewer Instructions could tell us something.The quotas call for approximately equal numbers of men and women with the exact proportion in each segment determined by the 1970 Census tract data. For women, the additional requirement is imposed that there be the proper proportion of employed and unemployed women in the location. Again, these quotas are based on the 1970 Census tract data. For men, the added requirement is that there be the proper proportion of men over and under 35 in the location. Which means the consequence won't be influenced by the number of women and men, it still show the real situation of public. If they found 80% of men, maybe, the consequence would show more men-related data and it showed that the data is independent.
+
+
+* * *
+
+## Part 2: Research question
+
+#Question1
+Firstly, I would like to know if those data could provide convincing evidence that American people study more than 6 years in average and if men have a higher educatino year than women. So, the first thing I need to do is to filter the 'educ' variability which represents the highest year of school complete and to see the distribution of the years. And then, I???ll make a hypothesis test and confidence interval about 12 years in average for population to see the consequence. ( 95% confidence level ) 
+
+-> The consequence show that male in the US have a little bit more years in education than women, on average.
+
+#Question2
+Secondly, I would like to use ANOVA test to see if there???s a difference from average family income in each race. So, I need to filter ???race??? and ???coninc??? and stack the data frame to use ???avo??? function.
+
+-> Black people have less family income than White people. There's a difference between different races.
+
+#Question3
+I'll figure out the family income situation's defference between black and white women who are under 30 ,are divorced and had more than 3 kids. And usd t-distributino to see if it porviding convincing evidence to prove there's a difference.
+
+-> There's no difference between black and white women who are under 30 ,are divorced and had more than 3 kids in their family's income. It means that family income isn't the reason to force them suffer in those bad situation.
+
+
+#Question4
+Finally, I would like to use Chi-square test to see is the sex be the reason makes an difference to human's class in society.
+
+-> Yes. There's a differenc betweem male and female.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+#Question1
+
+Filter the sex and educ, create a new dataset "ggs_q1" and see the distribution of male and female. We could see the mean is 12.75.
+
+```{r}
+gss_q1 <- gss %>% select(sex,educ)
+summary(gss_q1)
+ggplot(data=gss_q1,aes(x=sex,y=educ))+ geom_boxplot()
+```
+
+#Question2
+Filter the race and coninc, create a new dataset "ggs_q2".
+
+```{r}
+gss_q2 <- gss %>% select(race,coninc)
+gss_q2 <- na.omit(gss_q2)
+summary(gss_q2)
+ggplot(data=gss_q2,aes(x=race,y=coninc))+ geom_boxplot()
+gss_q2 %>% group_by(race) %>% summarise(m_income=mean(coninc))
+```
+
+White	47006.74			
+Black	30185.02			
+Other	42415.43	
+
+We can see Black people have lower family income.
+
+#Question3
+Filter data to the situation I set. 
+```{r}
+gss_q3 <- gss %>% filter(sex=="Female",race!="Other",marital=="Divorced",age < 30, childs >3 )
+ggplot(data=gss_q3,aes(x=race,y=coninc,group=race))+geom_boxplot()
+summary(gss_q3$coninc)
+```
+
+
+```{r}
+gss_q3_summary <- gss_q3 %>% group_by(race)%>% summarise(m_qe=mean(coninc),sd_qe=sd(coninc))
+gss_q3_summary
+```
+
+#Question4
+
+I'll try to calculate the number of each class.
+```{r}
+gss_q4 <- gss %>% select(sex,class)
+gss_q4 <- na.omit(gss_q4)
+
+nrow(gss_q4[which(gss_q4$sex == "Male" & gss_q4$class == "Lower Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Male" & gss_q4$class == "Working Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Male" & gss_q4$class == "Middle Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Female" & gss_q4$class == "Upper Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Female" & gss_q4$class == "Lower Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Female" & gss_q4$class == "Working Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Female" & gss_q4$class == "Middle Class"),])
+nrow(gss_q4[which(gss_q4$sex == "Female" & gss_q4$class == "Upper Class"),])
+
+```
+
+Make a data frame to show the relationship between gender, class and counting number
+
+```{r}
+gss_q4_s <- data.frame(gender = c("male","male","male","male","female","female","female","female"),
+class = c("Lower Class","Working Class","Middle Class","Upper Class","Lower Class","Working Class","Middle Class","Upper Class"),
+frequency = c(1206,11053,10661,927,1941,13405,13628,927))
+gss_q4_s
+```
+
+* * *
+
+## Part 4: Inference
+
+#Question1
+
+H0: u=12
+H1: u<= 12
+(u = population mean of the highest year of school complete)
+n = 25146 + 31915 = 57061 < 10% of american, so it's met the cnodition
+
+I need to use hyothesis test and confident interval to calculate the area of rejection and with theoretical metod about Z distribution.( 95% confidence level ) 
+
+```{r}
+inference(y=educ,data=gss_q1,statistic = "mean", type = "ht", null = 12, alternative = "less" ,method="theoretical")
+```
+
+it prints out that 
+Single numerical variable
+n = 56897, y-bar = 12.7536, s = 3.1816
+H0: mu = 12
+HA: mu < 12
+t = 56.4974, df = 56896
+p_value = 1
+
+which P-value > 0.05, we couldn't reject the H0, so it means there has 95% of confidence says that American has average 12 years highest year of school completem.
+
+```{r}
+inference(y=educ,x=sex,data = gss_q1, statistic = "mean" , type = "ci", conf_level = 0.95, method = "theoretical" )
+```
+
+Confidence Interval shows that male have 0.2001 - 0.3067 more highest year complete education than women. Then, I'll chek if this's true:
+
+Ho :uman - uwoman  = 0
+H1 :uman - uwoman =/= 0
+
+```{r}
+inference(y=educ,x=sex, data=gss_q1,statistic = "mean", type = "ht", null = 0, alternative = "twosided" ,method="theoretical")
+```
+
+Response variable: numerical
+Explanatory variable: categorical (2 levels) 
+n_Male = 25078, y_bar_Male = 12.8953, s_Male = 3.3694
+n_Female = 31819, y_bar_Female = 12.6419, s_Female = 3.0208
+H0: mu_Male =  mu_Female
+HA: mu_Male != mu_Female
+t = 9.3201, df = 25077
+p_value = < 0.0001
+
+P_value < 0.05, reject H0, there's a difference between men and women and we all konw men have more years than women through last analysis.
+
+#Question2
+
+ANOVA testing to see if there's difference between White, Black and Other.
+
+<condition>
+1. independence
+2. approximate normally
+3. Equal variance
+
+Ho : ??1 = ??2 = ... = ??k
+H1 : At least one mean is different
+
+```{r}
+Aov_t <- aov (coninc~race,data=gss_q2)
+summary(Aov_t)
+```
+
+F equal almost zero, reject Ho, and we can know the difference of average family income is Black people.
+
+#Question3
+
+Use T distribution since the sample size is smaller than 30
+
+White	sample mean= 21526.77	sd= 17102.012 n=13		
+Black	sample mean= 14690.75	sd= 9896.172	n=4
+
+H0: u white - u black = 0
+H1: u white - u black =/= 0
+
+```{r}
+t = (21526.77-14690.75)/((((17102.012^2)/13)+((9896.172^2)/4))^(1/2))
+pt( t , df=15,lower.tail = FALSE)
+```
+
+p-value = 0.1672115 > 0.05 , We couldn't reject H0, there's no difference between Black and White female in this situation.
+
+#Question4 
+
+Ho : fellow the same distrubition in population
+H1 : Didn't fellow the same distribution in population
+
+I want to know if make a cross table
+
+```{r}
+xtabs ( frequency ~ gender + class, data=gss_q4_s) -> cross.table
+cross.table
+chisq.test(cross.table)
+
+```
+
+        class
+gender   Lower Class Middle Class Upper Class Working Class
+  female        1941        13628         927         13405
+  male          1206        10661         927         11053
+
+	Pearson's Chi-squared test
+
+data:  cross.table
+X-squared = 79.379, df = 3, p-value < 2.2e-16
+
+p-value is too small, male and female didn't fellow their pupolation distribution.
